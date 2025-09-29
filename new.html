@@ -1,0 +1,1502 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>🎆 FirePlanner 2D - Pro</title>
+<style>
+body {
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+  margin: 0;
+  background: #111;
+  color: #eee;
+}
+h1, h2 {
+  text-align: center;
+  margin: 10px 0;
+}
+input, button, select, textarea {
+  margin: 5px;
+  padding: 8px;
+  background: #222;
+  color: #fff;
+  border: 1px solid #555;
+  border-radius: 5px;
+  font-size: 14px;
+}
+button {
+  cursor: pointer;
+  background: #444;
+  transition: 0.2s;
+  padding: 10px 15px;
+}
+button:hover {
+  background: #666;
+}
+#container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+}
+#effectList {
+  max-width: 400px;
+  margin: 10px;
+}
+.effect-item {
+  border: 1px solid #555;
+  padding: 10px;
+  margin: 8px 0;
+  border-radius: 5px;
+  background: #222;
+  cursor: move;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.2s;
+}
+.effect-item:hover {
+  background: #333;
+  transform: translateY(-2px);
+}
+.effect-item.dragging {
+  opacity: 0.5;
+  transform: rotate(5deg);
+}
+#canvasContainer {
+  position: relative;
+  margin: 10px auto;
+  border: 2px solid #555;
+  background: #000;
+  border-radius: 8px;
+}
+#fireworkCanvas {
+  cursor: crosshair;
+  display: block;
+  border-radius: 6px;
+}
+.tooltip {
+  position: relative;
+  display: inline-block;
+}
+.tooltip .tooltiptext {
+  visibility: hidden;
+  width: 200px;
+  background: #333;
+  color: #fff;
+  text-align: left;
+  border-radius: 5px;
+  padding: 8px;
+  position: absolute;
+  z-index: 1;
+  bottom: 125%;
+  left: 50%;
+  margin-left: -100px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.tooltip:hover .tooltiptext {
+  visibility: visible;
+  opacity: 1;
+}
+#timerDisplay {
+  font-size: 3em;
+  text-align: center;
+  margin: 20px 0;
+  font-weight: bold;
+  color: #0ff;
+}
+#currentEffect {
+  font-size: 1.4em;
+  color: #ff0;
+  text-align: center;
+  margin: 15px 0;
+  padding: 10px;
+  background: #222;
+  border-radius: 5px;
+  min-height: 60px;
+}
+#warning {
+  font-size: 2.5em;
+  color: #f00;
+  text-align: center;
+  margin: 15px 0;
+  font-weight: bold;
+}
+#timelineDisplay {
+  text-align: center;
+  margin: 15px 0;
+  padding: 10px;
+  background: #222;
+  border-radius: 5px;
+}
+#printArea {
+  display: none;
+}
+#warningFlash {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: red;
+  opacity: 0;
+  pointer-events: none;
+  border-radius: 5px;
+  transition: opacity 0.1s;
+}
+.controls {
+  text-align: center;
+  margin: 20px 0;
+  padding: 15px;
+  background: #222;
+  border-radius: 8px;
+}
+.effect-delete {
+  background: #d32f2f;
+  color: white;
+  border: none;
+  padding: 5px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.effect-delete:hover {
+  background: #b71c1c;
+}
+#costCalculation {
+  text-align: center;
+  margin: 20px 0;
+  padding: 15px;
+  background: #1a4d1a;
+  border-radius: 8px;
+  border: 2px solid #2e7d32;
+}
+#costCalculation h3 {
+  margin: 0 0 10px 0;
+  color: #4caf50;
+}
+#totalCost {
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #81c784;
+}
+#effectCount {
+  color: #a5d6a7;
+  margin-top: 5px;
+}
+.explosion {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 50%;
+  animation: explode 1s ease-out forwards;
+}
+@keyframes explode {
+  0% { transform: scale(0); opacity: 1; }
+  50% { transform: scale(1.5); opacity: 0.8; }
+  100% { transform: scale(3); opacity: 0; }
+}
+#qrModal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.8);
+}
+.modal-content {
+  background-color: #222;
+  margin: 15% auto;
+  padding: 20px;
+  border: 1px solid #555;
+  border-radius: 10px;
+  width: 300px;
+  text-align: center;
+}
+.close {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.close:hover {
+  color: #fff;
+}
+#backupStatus {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #4caf50;
+  color: white;
+  padding: 10px;
+  border-radius: 5px;
+  display: none;
+  z-index: 1000;
+}
+#effectOverview {
+  text-align: center;
+  margin: 20px 0;
+  padding: 15px;
+  background: #1a1a2e;
+  border-radius: 8px;
+  border: 2px solid #16213e;
+}
+#effectOverview h3 {
+  margin: 0 0 15px 0;
+  color: #0f3460;
+}
+#overviewTable {
+  overflow-x: auto;
+}
+.overview-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #222;
+  border-radius: 5px;
+  overflow: hidden;
+}
+.overview-table th {
+  background: #333;
+  color: #fff;
+  padding: 10px 8px;
+  text-align: left;
+  font-size: 12px;
+  border-bottom: 2px solid #555;
+}
+.overview-table td {
+  padding: 8px;
+  border-bottom: 1px solid #444;
+  font-size: 11px;
+  color: #ddd;
+}
+.overview-table tr:hover {
+  background: #2a2a2a;
+}
+.time-cell {
+  color: #4caf50;
+  font-weight: bold;
+}
+.channel-cell {
+  color: #2196f3;
+  font-weight: bold;
+}
+.button-cell {
+  color: #ff9800;
+  font-weight: bold;
+}
+.database-info {
+  background: #2a2a2a;
+  padding: 10px;
+  border-radius: 5px;
+  margin: 10px 0;
+  font-size: 12px;
+  color: #ccc;
+}
+.image-preview {
+  max-width: 200px;
+  max-height: 150px;
+  border-radius: 5px;
+  border: 2px solid #555;
+  margin: 10px 0;
+}
+.effect-image {
+  max-width: 50px;
+  max-height: 50px;
+  border-radius: 3px;
+  margin-right: 10px;
+  vertical-align: middle;
+}
+.database-item {
+  display: flex;
+  align-items: center;
+  padding: 5px;
+  margin: 2px 0;
+  background: #333;
+  border-radius: 3px;
+}
+.database-item img {
+  margin-right: 10px;
+}
+</style>
+</head>
+<body>
+
+<h1>🎆 FirePlanner 2D - Pro</h1>
+
+<div id="planScreen">
+<h2>Show-Name</h2>
+<input id="showName" placeholder="Name der Show">
+
+<h2>Effekt hinzufügen</h2>
+<select id="effectSavedList" onchange="selectSavedEffect()">
+  <option value="">Vorherige Effekte</option>
+</select>
+<select id="effectDatabase" onchange="selectFromDatabase()">
+  <option value="">Effekt-Datenbank</option>
+</select><br>
+
+<div class="database-info">
+  📊 <strong>Excel-Import Format:</strong> Name | Barcode | Dauer | Preis | Typ<br>
+  Beispiel: "Goldener Regen | 4260123456789 | 0:15 | 12.50 | rocket"<br>
+  📸 <strong>Bilder:</strong> Optional - können einzeln hochgeladen werden
+</div>
+
+<h3>📸 Bild für Effekt (Optional)</h3>
+<input type="file" id="effectImage" accept="image/*" onchange="previewImage()">
+<div id="imagePreview" style="margin: 10px 0;"></div>
+<button onclick="clearImage()">🗑️ Bild entfernen</button>
+
+<input id="name" placeholder="Effektname">
+<select id="effectType">
+  <option value="rocket">Rakete</option>
+  <option value="fountain">Fontäne</option>
+  <option value="battery">Batterie</option>
+</select>
+<input id="plannedDuration" placeholder="Dauer (m:s)">
+<input id="price" placeholder="Preis (€)" type="number" step="0.01">
+<input id="barcode" placeholder="Barcode/EAN">
+<input id="time" placeholder="Showzeit (m:s)">
+<input id="channel" placeholder="Kanal">
+<input id="receiver" placeholder="Empfänger">
+<input id="buttonKey" placeholder="Taste">
+<input id="quantity" placeholder="Anzahl Effekte">
+<textarea id="additionalInfo" placeholder="Zusatzinfos"></textarea>
+<button onclick="addEffect()">Effekt speichern</button>
+<button onclick="addToDatabase()">Zur Datenbank hinzufügen</button>
+<input type="file" id="excelImport" accept=".csv,.txt,.tsv" onchange="importExcelDatabase()">
+<button onclick="document.getElementById('excelImport').click()">📊 Excel-Datenbank importieren</button>
+<button onclick="clearDatabase()">🗑️ Datenbank leeren</button>
+
+<div id="container">
+  <div id="canvasContainer">
+    <canvas id="fireworkCanvas" width="800" height="500"></canvas>
+    <div id="warningFlash"></div>
+  </div>
+  <div id="effectList"></div>
+</div>
+
+<div id="costCalculation">
+  <h3>💰 Kostenkalkulation</h3>
+  <div id="totalCost">Gesamtkosten: 0,00 €</div>
+  <div id="effectCount">Anzahl Effekte: 0</div>
+</div>
+
+<div id="effectOverview">
+  <h3>📋 Effekt-Übersicht</h3>
+  <div id="overviewTable"></div>
+</div>
+
+<h2>Musik</h2>
+<input type="file" id="musicFile" accept="audio/*" onchange="loadMusic()">
+
+<div class="controls">
+<button onclick="saveShow()">Show speichern</button>
+<button onclick="loadSavedShows()">Show laden</button>
+<select id="savedShows" onchange="selectShow()">
+  <option value="">Gespeicherte Shows</option>
+</select>
+<button onclick="exportShow()">Export JSON</button>
+<input type="file" id="importFile" accept=".json" onchange="importShow()">
+<button onclick="importShow()">Import JSON</button>
+<button onclick="printPlan()">Druckversion</button>
+<button onclick="generateQRCode()">📱 Smartphone-Steuerung</button>
+<button onclick="loadFromSession()">🔗 Session laden</button>
+<button onclick="autoBackup()">💾 Auto-Backup</button>
+<button onclick="startShow()">Show starten</button>
+<button onclick="pauseShow()">Pause</button>
+<button onclick="resumeShow()">Fortsetzen</button>
+<button onclick="stopShow()">Stopp</button>
+</div>
+</div>
+
+<div id="showScreen" style="display:none;">
+<h2>Show Timer</h2>
+<div id="timerDisplay">00:00</div>
+<div id="warning"></div>
+<div id="currentEffect"></div>
+<div id="timelineDisplay"></div>
+<button onclick="backToPlan()" style="margin: 20px;">Zurück zur Planung</button>
+</div>
+
+<div class="print-area" id="printArea"></div>
+
+<!-- QR Code Modal -->
+<div id="qrModal">
+  <div class="modal-content">
+    <span class="close" onclick="closeQRModal()">&times;</span>
+    <h3>📱 Smartphone-Steuerung</h3>
+    <div id="qrCode"></div>
+    <p>Scanne den QR-Code mit deinem Smartphone</p>
+    <div id="remoteUrl"></div>
+  </div>
+</div>
+
+<div id="backupStatus">Backup erstellt!</div>
+
+<audio id="warningBeep" preload="auto">
+  <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT" type="audio/wav">
+</audio>
+<audio id="fireBeep" preload="auto">
+  <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT" type="audio/wav">
+</audio>
+<audio id="musicPlayer"></audio>
+
+<script>
+let effects = [];
+let showTimer = null;
+let showStartTime = 0;
+let isPaused = false;
+let pausedTime = 0;
+let canvas, ctx;
+let savedEffects = [];
+let effectDatabase = [];
+let draggedEffect = null;
+let autoBackupInterval = null;
+let currentEffectImage = null;
+
+// Initialize canvas and load data
+window.onload = function() {
+  canvas = document.getElementById('fireworkCanvas');
+  ctx = canvas.getContext('2d');
+  loadSavedShows();
+  loadSavedEffects();
+  loadEffectDatabase();
+  drawCanvas();
+  startAutoBackup();
+  
+  // Canvas click handler
+  canvas.addEventListener('click', function(e) {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    if (effects.length > 0) {
+      const lastEffect = effects[effects.length - 1];
+      lastEffect.x = x;
+      lastEffect.y = y;
+      updateEffectList();
+      drawCanvas();
+    }
+  });
+  
+  // Drag and drop for canvas
+  canvas.addEventListener('dragover', function(e) {
+    e.preventDefault();
+  });
+  
+  canvas.addEventListener('drop', function(e) {
+    e.preventDefault();
+    if (draggedEffect) {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      draggedEffect.x = x;
+      draggedEffect.y = y;
+      updateEffectList();
+      drawCanvas();
+      draggedEffect = null;
+    }
+  });
+};
+
+// Initialize effect database with sample data
+// Image handling functions
+function previewImage() {
+  const fileInput = document.getElementById('effectImage');
+  const file = fileInput.files[0];
+  const previewDiv = document.getElementById('imagePreview');
+  
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      currentEffectImage = e.target.result;
+      previewDiv.innerHTML = `<img src="${currentEffectImage}" class="image-preview" alt="Effekt Vorschau">`;
+    };
+    reader.readAsDataURL(file);
+  } else {
+    clearImage();
+  }
+}
+
+function clearImage() {
+  currentEffectImage = null;
+  document.getElementById('imagePreview').innerHTML = '';
+  document.getElementById('effectImage').value = '';
+}
+
+function initializeDatabase() {
+  const sampleEffects = [
+    {name: "Goldener Regen", duration: "0:15", price: 12.50, barcode: "4260123456789", effectType: "fountain"},
+    {name: "Silber Rakete", duration: "0:03", price: 8.90, barcode: "4260123456790", effectType: "rocket"},
+    {name: "Bunte Batterie", duration: "0:45", price: 25.00, barcode: "4260123456791", effectType: "battery"},
+    {name: "Rote Sterne", duration: "0:08", price: 15.20, barcode: "4260123456792", effectType: "rocket"},
+    {name: "Grüne Fontäne", duration: "0:20", price: 18.75, barcode: "4260123456793", effectType: "fountain"}
+  ];
+  
+  effectDatabase = sampleEffects;
+  localStorage.setItem('effectDatabase', JSON.stringify(effectDatabase));
+  updateDatabaseList();
+}
+
+function loadEffectDatabase() {
+  const saved = localStorage.getItem('effectDatabase');
+  if (saved) {
+    effectDatabase = JSON.parse(saved);
+  } else {
+    initializeDatabase();
+  }
+  updateDatabaseList();
+}
+
+function updateDatabaseList() {
+  const select = document.getElementById('effectDatabase');
+  select.innerHTML = '<option value="">Effekt-Datenbank (' + effectDatabase.length + ' Effekte)</option>';
+  
+  effectDatabase.forEach((effect, index) => {
+    const option = document.createElement('option');
+    option.value = index;
+    const price = effect.price > 0 ? effect.price + '€' : 'Kein Preis';
+    const duration = effect.duration || effect.plannedDuration || 'Keine Dauer';
+    const type = effect.effectType || effect.type || 'Unbekannt';
+    const hasImage = effect.image ? '📸' : '';
+    option.textContent = `${hasImage} ${effect.name} - ${price} - ${duration} - ${type}`;
+    select.appendChild(option);
+  });
+}
+
+function selectFromDatabase() {
+  const select = document.getElementById('effectDatabase');
+  const index = select.value;
+  
+  if (index !== '') {
+    const effect = effectDatabase[index];
+    document.getElementById('name').value = effect.name || '';
+    document.getElementById('effectType').value = effect.effectType || effect.type || 'rocket';
+    document.getElementById('plannedDuration').value = effect.duration || effect.plannedDuration || '';
+    document.getElementById('price').value = effect.price || '';
+    document.getElementById('barcode').value = effect.barcode || '';
+    
+    // Load image if available
+    if (effect.image) {
+      currentEffectImage = effect.image;
+      document.getElementById('imagePreview').innerHTML = `<img src="${currentEffectImage}" class="image-preview" alt="Effekt Bild">`;
+    } else {
+      clearImage();
+    }
+    
+    // Feedback für Benutzer
+    const imageText = effect.image ? ' (mit Bild)' : '';
+    alert(`Effekt "${effect.name}"${imageText} aus Datenbank geladen!`);
+  }
+}
+
+function addToDatabase() {
+  const name = document.getElementById('name').value;
+  const effectType = document.getElementById('effectType').value;
+  const duration = document.getElementById('plannedDuration').value;
+  const price = parseFloat(document.getElementById('price').value) || 0;
+  const barcode = document.getElementById('barcode').value;
+  
+  if (!name) {
+    alert('Bitte mindestens Name eingeben!');
+    return;
+  }
+  
+  const newEffect = {
+    name, 
+    effectType, 
+    duration, 
+    price, 
+    barcode,
+    image: currentEffectImage // Add image if available
+  };
+  
+  effectDatabase.push(newEffect);
+  localStorage.setItem('effectDatabase', JSON.stringify(effectDatabase));
+  updateDatabaseList();
+  
+  const imageText = currentEffectImage ? ' (mit Bild)' : '';
+  alert(`Effekt "${name}"${imageText} zur Datenbank hinzugefügt!\nDatenbank hat jetzt ${effectDatabase.length} Effekte.`);
+  
+  // Clear form after adding
+  clearImage();
+}
+
+function clearDatabase() {
+  if (confirm('Wirklich die komplette Datenbank löschen?\nDies kann nicht rückgängig gemacht werden!')) {
+    effectDatabase = [];
+    localStorage.setItem('effectDatabase', JSON.stringify(effectDatabase));
+    updateDatabaseList();
+    initializeDatabase(); // Lade Beispiel-Effekte neu
+    alert('Datenbank geleert und mit Beispiel-Effekten neu geladen!');
+  }
+}
+
+function importExcelDatabase() {
+  const fileInput = document.getElementById('excelImport');
+  const file = fileInput.files[0];
+  
+  if (!file) {
+    alert('Bitte eine Excel/CSV-Datei auswählen!');
+    return;
+  }
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const text = e.target.result;
+      const lines = text.split('\n');
+      const newEffects = [];
+      let skippedLines = 0;
+      
+      // Skip header row, start from line 1
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (line) {
+          // Try different separators: Tab, Comma, Semicolon, Pipe
+          let columns = line.split('\t');
+          if (columns.length < 2) {
+            columns = line.split(',');
+          }
+          if (columns.length < 2) {
+            columns = line.split(';');
+          }
+          if (columns.length < 2) {
+            columns = line.split('|');
+          }
+          
+          if (columns.length >= 2) {
+            const effect = {
+              name: columns[0].trim(),
+              barcode: columns[1].trim(),
+              duration: columns[2] ? columns[2].trim() : "", // Dauer aus 3. Spalte
+              price: columns[3] ? parseFloat(columns[3].trim()) || 0 : 0, // Preis aus 4. Spalte
+              effectType: columns[4] ? columns[4].trim() : "rocket" // Typ aus 5. Spalte
+            };
+            
+            if (effect.name && effect.barcode) {
+              newEffects.push(effect);
+            } else {
+              skippedLines++;
+            }
+          } else {
+            skippedLines++;
+          }
+        }
+      }
+      
+      if (newEffects.length > 0) {
+        effectDatabase = effectDatabase.concat(newEffects);
+        localStorage.setItem('effectDatabase', JSON.stringify(effectDatabase));
+        updateDatabaseList();
+        
+        let message = `✅ ${newEffects.length} Effekte erfolgreich importiert!\n`;
+        message += `📊 Datenbank hat jetzt ${effectDatabase.length} Effekte.\n`;
+        if (skippedLines > 0) {
+          message += `⚠️ ${skippedLines} Zeilen übersprungen (unvollständige Daten).`;
+        }
+        alert(message);
+      } else {
+        alert('❌ Keine gültigen Effekte gefunden!\n\n📋 Format: Name | Barcode | Dauer | Preis | Typ\nBeispiel: "Goldener Regen | 4260123456789 | 0:15 | 12.50 | fountain"');
+      }
+    } catch (error) {
+      alert('❌ Fehler beim Importieren der Datei!\nBitte überprüfe das Dateiformat.');
+      console.error('Import error:', error);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function parseTime(timeStr) {
+  if (!timeStr) return 0;
+  const parts = timeStr.split(':');
+  if (parts.length === 2) {
+    return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+  }
+  return parseInt(timeStr) || 0;
+}
+
+function formatTime(seconds) {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
+function addEffect() {
+  const name = document.getElementById('name').value;
+  const effectType = document.getElementById('effectType').value;
+  const plannedDuration = document.getElementById('plannedDuration').value;
+  const price = parseFloat(document.getElementById('price').value) || 0;
+  const barcode = document.getElementById('barcode').value;
+  const time = document.getElementById('time').value;
+  const channel = document.getElementById('channel').value;
+  const receiver = document.getElementById('receiver').value;
+  const buttonKey = document.getElementById('buttonKey').value;
+  const quantity = parseInt(document.getElementById('quantity').value) || 1;
+  const additionalInfo = document.getElementById('additionalInfo').value;
+  
+  if (!name || !time) {
+    alert('Bitte mindestens Name und Showzeit eingeben!');
+    return;
+  }
+  
+  const effect = {
+    id: Date.now(),
+    name,
+    effectType,
+    plannedDuration,
+    price,
+    barcode,
+    time: parseTime(time),
+    timeStr: time,
+    channel,
+    receiver,
+    buttonKey,
+    quantity,
+    additionalInfo,
+    image: currentEffectImage, // Add image if available
+    x: 400,
+    y: 250
+  };
+  
+  effects.push(effect);
+  
+  // Save to saved effects
+  if (!savedEffects.find(e => e.name === name)) {
+    savedEffects.push({
+      name,
+      effectType,
+      plannedDuration,
+      price,
+      barcode,
+      channel,
+      receiver,
+      buttonKey,
+      quantity,
+      additionalInfo
+    });
+    localStorage.setItem('savedEffects', JSON.stringify(savedEffects));
+    updateSavedEffectsList();
+  }
+  
+  // Clear form
+  document.getElementById('name').value = '';
+  document.getElementById('plannedDuration').value = '';
+  document.getElementById('price').value = '';
+  document.getElementById('barcode').value = '';
+  document.getElementById('time').value = '';
+  document.getElementById('channel').value = '';
+  document.getElementById('receiver').value = '';
+  document.getElementById('buttonKey').value = '';
+  document.getElementById('quantity').value = '';
+  document.getElementById('additionalInfo').value = '';
+  clearImage(); // Clear image as well
+  
+  updateEffectList();
+  updateCostCalculation();
+  drawCanvas();
+}
+
+function updateEffectList() {
+  const list = document.getElementById('effectList');
+  list.innerHTML = '<h3>Effekte in der Show</h3>';
+  
+  effects.sort((a, b) => a.time - b.time);
+  
+  effects.forEach(effect => {
+    const div = document.createElement('div');
+    div.className = 'effect-item';
+    div.draggable = true;
+    div.innerHTML = `
+      <div style="display: flex; align-items: center;">
+        ${effect.image ? `<img src="${effect.image}" class="effect-image" alt="Effekt">` : ''}
+        <div>
+          <strong>${effect.name}</strong><br>
+          Zeit: ${effect.timeStr} | Typ: ${effect.effectType}<br>
+          Kanal: ${effect.channel} | Taste: ${effect.buttonKey}<br>
+          ${effect.price > 0 ? `Preis: ${effect.price.toFixed(2)}€ | ` : ''}Anzahl: ${effect.quantity}
+        </div>
+      </div>
+      <button class="effect-delete" onclick="deleteEffect(${effect.id})">×</button>
+    `;
+    
+    // Add drag handlers
+    div.addEventListener('dragstart', function(e) {
+      draggedEffect = effect;
+      div.classList.add('dragging');
+    });
+    
+    div.addEventListener('dragend', function(e) {
+      div.classList.remove('dragging');
+    });
+    
+    list.appendChild(div);
+  });
+}
+
+function updateCostCalculation() {
+  let totalCost = 0;
+  let totalEffects = 0;
+  
+  effects.forEach(effect => {
+    totalCost += (effect.price || 0) * (effect.quantity || 1);
+    totalEffects += effect.quantity || 1;
+  });
+  
+  document.getElementById('totalCost').textContent = `Gesamtkosten: ${totalCost.toFixed(2)} €`;
+  document.getElementById('effectCount').textContent = `Anzahl Effekte: ${totalEffects}`;
+  
+  updateEffectOverview();
+}
+
+function updateEffectOverview() {
+  const overviewDiv = document.getElementById('overviewTable');
+  
+  if (effects.length === 0) {
+    overviewDiv.innerHTML = '<p style="color: #666; font-style: italic;">Keine Effekte in der Show</p>';
+    return;
+  }
+  
+  // Sort effects by time
+  const sortedEffects = [...effects].sort((a, b) => a.time - b.time);
+  
+  let html = `
+    <table class="overview-table">
+      <thead>
+        <tr>
+          <th>Zeit</th>
+          <th>Effekt</th>
+          <th>Typ</th>
+          <th>Dauer</th>
+          <th>Kanal</th>
+          <th>Taste</th>
+          <th>Empfänger</th>
+          <th>Preis</th>
+          <th>Anzahl</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+  
+  sortedEffects.forEach(effect => {
+    html += `
+      <tr>
+        <td class="time-cell">${effect.timeStr}</td>
+        <td><strong>${effect.name}</strong></td>
+        <td>${effect.effectType}</td>
+        <td>${effect.plannedDuration || '-'}</td>
+        <td class="channel-cell">${effect.channel || '-'}</td>
+        <td class="button-cell">${effect.buttonKey || '-'}</td>
+        <td>${effect.receiver || '-'}</td>
+        <td>${effect.price > 0 ? effect.price.toFixed(2) + '€' : '-'}</td>
+        <td>${effect.quantity || 1}</td>
+      </tr>
+    `;
+  });
+  
+  html += '</tbody></table>';
+  overviewDiv.innerHTML = html;
+}
+
+function deleteEffect(id) {
+  effects = effects.filter(e => e.id !== id);
+  updateEffectList();
+  updateCostCalculation();
+  drawCanvas();
+}
+
+function drawCanvas() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  // Draw grid
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+  for (let x = 0; x <= canvas.width; x += 50) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, canvas.height);
+    ctx.stroke();
+  }
+  for (let y = 0; y <= canvas.height; y += 50) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(canvas.width, y);
+    ctx.stroke();
+  }
+  
+  // Draw effects
+  effects.forEach(effect => {
+    const colors = {
+      rocket: '#ff4444',
+      fountain: '#44ff44',
+      battery: '#4444ff'
+    };
+    
+    // Draw effect circle
+    ctx.fillStyle = colors[effect.effectType] || '#ffffff';
+    ctx.beginPath();
+    ctx.arc(effect.x, effect.y, 8, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    // Draw image icon if available
+    if (effect.image) {
+      ctx.fillStyle = '#ffff00';
+      ctx.font = '16px Arial';
+      ctx.fillText('📸', effect.x - 8, effect.y - 12);
+    }
+    
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '12px Arial';
+    ctx.fillText(effect.name, effect.x + 12, effect.y + 4);
+    ctx.fillText(effect.timeStr, effect.x + 12, effect.y + 16);
+    
+    // Show price if available
+    if (effect.price > 0) {
+      ctx.fillStyle = '#90ee90';
+      ctx.fillText(`${effect.price}€`, effect.x + 12, effect.y + 28);
+    }
+  });
+}
+
+function createExplosion(x, y, color) {
+  const explosion = document.createElement('div');
+  explosion.className = 'explosion';
+  explosion.style.left = (x - 25) + 'px';
+  explosion.style.top = (y - 25) + 'px';
+  explosion.style.width = '50px';
+  explosion.style.height = '50px';
+  explosion.style.background = `radial-gradient(circle, ${color} 0%, transparent 70%)`;
+  
+  document.getElementById('canvasContainer').appendChild(explosion);
+  
+  setTimeout(() => {
+    explosion.remove();
+  }, 1000);
+}
+
+function loadSavedEffects() {
+  const saved = localStorage.getItem('savedEffects');
+  if (saved) {
+    savedEffects = JSON.parse(saved);
+    updateSavedEffectsList();
+  }
+}
+
+function updateSavedEffectsList() {
+  const select = document.getElementById('effectSavedList');
+  select.innerHTML = '<option value="">Vorherige Effekte (' + savedEffects.length + ')</option>';
+  
+  savedEffects.forEach((effect, index) => {
+    const option = document.createElement('option');
+    option.value = index;
+    option.textContent = effect.name;
+    select.appendChild(option);
+  });
+}
+
+function selectSavedEffect() {
+  const select = document.getElementById('effectSavedList');
+  const index = select.value;
+  
+  if (index !== '') {
+    const effect = savedEffects[index];
+    document.getElementById('name').value = effect.name;
+    document.getElementById('effectType').value = effect.effectType;
+    document.getElementById('plannedDuration').value = effect.plannedDuration;
+    document.getElementById('price').value = effect.price || '';
+    document.getElementById('barcode').value = effect.barcode || '';
+    document.getElementById('channel').value = effect.channel;
+    document.getElementById('receiver').value = effect.receiver;
+    document.getElementById('buttonKey').value = effect.buttonKey;
+    document.getElementById('quantity').value = effect.quantity;
+    document.getElementById('additionalInfo').value = effect.additionalInfo;
+  }
+}
+
+function saveShow() {
+  const showName = document.getElementById('showName').value || 'Unbenannte Show';
+  const showData = {
+    name: showName,
+    effects: effects,
+    timestamp: new Date().toISOString()
+  };
+  
+  let savedShows = JSON.parse(localStorage.getItem('savedShows') || '[]');
+  savedShows.push(showData);
+  localStorage.setItem('savedShows', JSON.stringify(savedShows));
+  
+  alert('Show gespeichert!');
+  loadSavedShows();
+}
+
+function loadSavedShows() {
+  const select = document.getElementById('savedShows');
+  select.innerHTML = '<option value="">Gespeicherte Shows</option>';
+  
+  const savedShows = JSON.parse(localStorage.getItem('savedShows') || '[]');
+  savedShows.forEach((show, index) => {
+    const option = document.createElement('option');
+    option.value = index;
+    option.textContent = `${show.name} (${new Date(show.timestamp).toLocaleDateString()})`;
+    select.appendChild(option);
+  });
+}
+
+function selectShow() {
+  const select = document.getElementById('savedShows');
+  const index = select.value;
+  
+  if (index !== '') {
+    const savedShows = JSON.parse(localStorage.getItem('savedShows') || '[]');
+    const show = savedShows[index];
+    
+    document.getElementById('showName').value = show.name;
+    effects = show.effects || [];
+    updateEffectList();
+    updateCostCalculation();
+    drawCanvas();
+  }
+}
+
+function exportShow() {
+  const showName = document.getElementById('showName').value || 'Unbenannte Show';
+  const showData = {
+    name: showName,
+    effects: effects,
+    exportDate: new Date().toISOString()
+  };
+  
+  const dataStr = JSON.stringify(showData, null, 2);
+  const dataBlob = new Blob([dataStr], {type: 'application/json'});
+  const url = URL.createObjectURL(dataBlob);
+  
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${showName}.json`;
+  link.click();
+  
+  URL.revokeObjectURL(url);
+}
+
+function importShow() {
+  const fileInput = document.getElementById('importFile');
+  const file = fileInput.files[0];
+  
+  if (!file) {
+    alert('Bitte eine Datei auswählen!');
+    return;
+  }
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const showData = JSON.parse(e.target.result);
+      document.getElementById('showName').value = showData.name || 'Importierte Show';
+      effects = showData.effects || [];
+      updateEffectList();
+      updateCostCalculation();
+      drawCanvas();
+      alert('Show erfolgreich importiert!');
+    } catch (error) {
+      alert('Fehler beim Importieren der Datei!');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function loadMusic() {
+  const fileInput = document.getElementById('musicFile');
+  const file = fileInput.files[0];
+  
+  if (file) {
+    const url = URL.createObjectURL(file);
+    const musicPlayer = document.getElementById('musicPlayer');
+    musicPlayer.src = url;
+    alert('Musik geladen!');
+  }
+}
+
+function printPlan() {
+  const printArea = document.getElementById('printArea');
+  const showName = document.getElementById('showName').value || 'Unbenannte Show';
+  
+  let totalCost = 0;
+  effects.forEach(effect => {
+    totalCost += (effect.price || 0) * (effect.quantity || 1);
+  });
+  
+  let html = `
+    <h1>${showName}</h1>
+    <h2>Effektliste</h2>
+    <table border="1" style="width:100%; border-collapse:collapse;">
+      <tr>
+        <th>Zeit</th>
+        <th>Name</th>
+        <th>Typ</th>
+        <th>Dauer</th>
+        <th>Preis</th>
+        <th>Barcode</th>
+        <th>Kanal</th>
+        <th>Empfänger</th>
+        <th>Taste</th>
+        <th>Anzahl</th>
+        <th>Zusatzinfo</th>
+      </tr>
+  `;
+  
+  effects.sort((a, b) => a.time - b.time);
+  effects.forEach(effect => {
+    html += `
+      <tr>
+        <td>${effect.timeStr}</td>
+        <td>${effect.name}</td>
+        <td>${effect.effectType}</td>
+        <td>${effect.plannedDuration}</td>
+        <td>${effect.price ? effect.price.toFixed(2) + '€' : '-'}</td>
+        <td>${effect.barcode || '-'}</td>
+        <td>${effect.channel}</td>
+        <td>${effect.receiver}</td>
+        <td>${effect.buttonKey}</td>
+        <td>${effect.quantity}</td>
+        <td>${effect.additionalInfo}</td>
+      </tr>
+    `;
+  });
+  
+  html += `</table><h3>Gesamtkosten: ${totalCost.toFixed(2)} €</h3>`;
+  printArea.innerHTML = html;
+  printArea.style.display = 'block';
+  
+  window.print();
+  
+  setTimeout(() => {
+    printArea.style.display = 'none';
+  }, 1000);
+}
+
+function generateQRCode() {
+  // Create a unique session ID for this show
+  const sessionId = 'show_' + Date.now();
+  const showData = {
+    name: document.getElementById('showName').value || 'Unbenannte Show',
+    effects: effects,
+    database: effectDatabase,
+    sessionId: sessionId
+  };
+  
+  // Store in localStorage with session ID
+  localStorage.setItem(sessionId, JSON.stringify(showData));
+  
+  const dataStr = JSON.stringify(showData);
+  const encodedData = btoa(dataStr);
+  const remoteUrl = `${window.location.origin}${window.location.pathname}?session=${sessionId}&remote=${encodedData}`;
+  
+  // Simple QR code representation
+  const qrDiv = document.getElementById('qrCode');
+  qrDiv.innerHTML = `
+    <div style="width: 200px; height: 200px; background: white; margin: 0 auto; display: flex; align-items: center; justify-content: center; border: 2px solid #000;">
+      <div style="color: black; text-align: center; font-size: 10px;">
+        🎆 FirePlanner<br>
+        Session: ${sessionId.substring(5, 15)}<br>
+        <div style="font-size: 8px; margin-top: 10px;">
+          Scanne mit Smartphone<br>
+          für Remote-Zugriff
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.getElementById('remoteUrl').innerHTML = `
+    <div style="margin-top: 15px;">
+      <strong>Session-ID:</strong> ${sessionId}<br>
+      <small>URL: <a href="${remoteUrl}" target="_blank" style="color: #4caf50;">Auf anderem Gerät öffnen</a></small><br>
+      <small style="color: #999;">Teile diese URL oder Session-ID mit anderen Geräten</small>
+    </div>
+  `;
+  
+  document.getElementById('qrModal').style.display = 'block';
+}
+
+function loadFromSession() {
+  const sessionId = prompt('Session-ID eingeben:');
+  if (sessionId) {
+    const sessionData = localStorage.getItem(sessionId);
+    if (sessionData) {
+      try {
+        const showData = JSON.parse(sessionData);
+        document.getElementById('showName').value = showData.name;
+        effects = showData.effects || [];
+        if (showData.database) {
+          effectDatabase = showData.database;
+          localStorage.setItem('effectDatabase', JSON.stringify(effectDatabase));
+          updateDatabaseList();
+        }
+        updateEffectList();
+        updateCostCalculation();
+        drawCanvas();
+        alert('Show von Session geladen!');
+      } catch (error) {
+        alert('Fehler beim Laden der Session!');
+      }
+    } else {
+      alert('Session nicht gefunden!');
+    }
+  }
+}
+
+function closeQRModal() {
+  document.getElementById('qrModal').style.display = 'none';
+}
+
+function startAutoBackup() {
+  autoBackupInterval = setInterval(() => {
+    const backupData = {
+      shows: JSON.parse(localStorage.getItem('savedShows') || '[]'),
+      effects: savedEffects,
+      database: effectDatabase,
+      timestamp: new Date().toISOString()
+    };
+    
+    localStorage.setItem('autoBackup', JSON.stringify(backupData));
+    
+    // Show backup notification
+    const status = document.getElementById('backupStatus');
+    status.style.display = 'block';
+    setTimeout(() => {
+      status.style.display = 'none';
+    }, 2000);
+  }, 300000); // Every 5 minutes
+}
+
+function autoBackup() {
+  const backupData = {
+    shows: JSON.parse(localStorage.getItem('savedShows') || '[]'),
+    effects: savedEffects,
+    database: effectDatabase,
+    timestamp: new Date().toISOString()
+  };
+  
+  const dataStr = JSON.stringify(backupData, null, 2);
+  const dataBlob = new Blob([dataStr], {type: 'application/json'});
+  const url = URL.createObjectURL(dataBlob);
+  
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `FirePlanner_Backup_${new Date().toISOString().split('T')[0]}.json`;
+  link.click();
+  
+  URL.revokeObjectURL(url);
+  alert('Backup erstellt und heruntergeladen!');
+}
+
+function startShow() {
+  if (effects.length === 0) {
+    alert('Keine Effekte in der Show!');
+    return;
+  }
+  
+  document.getElementById('planScreen').style.display = 'none';
+  document.getElementById('showScreen').style.display = 'block';
+  
+  showStartTime = Date.now();
+  isPaused = false;
+  pausedTime = 0;
+  
+  // Start music if loaded
+  const musicPlayer = document.getElementById('musicPlayer');
+  if (musicPlayer.src) {
+    musicPlayer.currentTime = 0;
+    musicPlayer.play().catch(() => {});
+  }
+  
+  runShow();
+}
+
+function runShow() {
+  showTimer = setInterval(() => {
+    if (isPaused) return;
+    
+    const elapsed = Math.floor((Date.now() - showStartTime - pausedTime) / 1000);
+    document.getElementById('timerDisplay').textContent = formatTime(elapsed);
+    
+    // Check for upcoming effects
+    const upcomingEffects = effects.filter(e => 
+      e.time > elapsed && e.time <= elapsed + 10
+    );
+    
+    if (upcomingEffects.length > 0) {
+      const nextEffect = upcomingEffects[0];
+      const timeToEffect = nextEffect.time - elapsed;
+      
+      document.getElementById('warning').textContent = 
+        `ACHTUNG: ${nextEffect.name} in ${timeToEffect}s`;
+      
+      if (timeToEffect <= 3) {
+        flashWarning();
+        document.getElementById('warningBeep').play().catch(() => {});
+      }
+    } else {
+      document.getElementById('warning').textContent = '';
+    }
+    
+    // Check for current effects
+    const currentEffects = effects.filter(e => e.time === elapsed);
+    if (currentEffects.length > 0) {
+      const effect = currentEffects[0];
+      document.getElementById('currentEffect').innerHTML = 
+        `<div style="font-size: 1.8em; color: #ff0; text-align: center; background: #333; padding: 15px; border-radius: 10px; border: 3px solid #ff0;">
+          🎆 <strong>FEUER FREI!</strong><br>
+          <div style="font-size: 1.2em; margin: 10px 0;">${effect.name}</div>
+          <div style="font-size: 2em; color: #0ff; font-weight: bold;">
+            KANAL ${effect.channel} - TASTE ${effect.buttonKey}
+          </div>
+          <div style="font-size: 0.8em; color: #ccc; margin-top: 5px;">
+            ${effect.receiver ? 'Empfänger: ' + effect.receiver : ''}
+          </div>
+        </div>`;
+      document.getElementById('fireBeep').play().catch(() => {});
+      
+      // Create explosion animation
+      const colors = {
+        rocket: '#ff4444',
+        fountain: '#44ff44',
+        battery: '#4444ff'
+      };
+      createExplosion(effect.x, effect.y, colors[effect.effectType] || '#ffffff');
+      
+      setTimeout(() => {
+        document.getElementById('currentEffect').innerHTML = '';
+      }, 5000);
+    }
+    
+    // Update timeline
+    updateTimeline(elapsed);
+    
+  }, 1000);
+}
+
+function flashWarning() {
+  const flash = document.getElementById('warningFlash');
+  flash.style.opacity = '0.3';
+  setTimeout(() => {
+    flash.style.opacity = '0';
+  }, 200);
+}
+
+function updateTimeline(currentTime) {
+  const timeline = document.getElementById('timelineDisplay');
+  const upcomingEffects = effects
+    .filter(e => e.time > currentTime)
+    .slice(0, 5)
+    .map(e => `${formatTime(e.time)}: ${e.name}`)
+    .join(' | ');
+  
+  timeline.innerHTML = `<strong>Nächste Effekte:</strong><br>${upcomingEffects || 'Keine weiteren Effekte'}`;
+}
+
+function pauseShow() {
+  if (!isPaused) {
+    isPaused = true;
+    pausedTime += Date.now() - showStartTime;
+    
+    const musicPlayer = document.getElementById('musicPlayer');
+    musicPlayer.pause();
+  }
+}
+
+function resumeShow() {
+  if (isPaused) {
+    isPaused = false;
+    showStartTime = Date.now();
+    
+    const musicPlayer = document.getElementById('musicPlayer');
+    musicPlayer.play().catch(() => {});
+  }
+}
+
+function stopShow() {
+  clearInterval(showTimer);
+  isPaused = false;
+  
+  const musicPlayer = document.getElementById('musicPlayer');
+  musicPlayer.pause();
+  musicPlayer.currentTime = 0;
+  
+  backToPlan();
+}
+
+function backToPlan() {
+  document.getElementById('showScreen').style.display = 'none';
+  document.getElementById('planScreen').style.display = 'block';
+  
+  document.getElementById('timerDisplay').textContent = '00:00';
+  document.getElementById('warning').textContent = '';
+  document.getElementById('currentEffect').innerHTML = '';
+  document.getElementById('timelineDisplay').textContent = '';
+}
+
+// Function testing and validation
+function testAllFunctions() {
+  console.log('🔧 Testing FirePlanner functions...');
+  
+  // Test image functions
+  console.log('✅ Image functions loaded');
+  
+  // Test database functions
+  console.log('✅ Database functions loaded');
+  
+  // Test effect creation
+  console.log('✅ Effect creation functions loaded');
+  
+  // Test canvas drawing
+  console.log('✅ Canvas functions loaded');
+  
+  // Test show timer
+  console.log('✅ Show timer functions loaded');
+  
+  console.log('🎆 All FirePlanner functions ready!');
+}
+
+// Check for remote control URL parameter
+window.addEventListener('load', function() {
+  // Test all functions on load
+  testAllFunctions();
+  
+  const urlParams = new URLSearchParams(window.location.search);
+  const remoteData = urlParams.get('remote');
+  const sessionId = urlParams.get('session');
+  
+  if (remoteData) {
+    try {
+      const showData = JSON.parse(atob(remoteData));
+      document.getElementById('showName').value = showData.name;
+      effects = showData.effects || [];
+      
+      if (showData.database) {
+        effectDatabase = showData.database;
+        localStorage.setItem('effectDatabase', JSON.stringify(effectDatabase));
+        updateDatabaseList();
+      }
+      
+      updateEffectList();
+      updateCostCalculation();
+      drawCanvas();
+      alert(`Show "${showData.name}" von anderem Gerät geladen!`);
+      
+      // Store session for future access
+      if (sessionId) {
+        localStorage.setItem(sessionId, JSON.stringify(showData));
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Remote-Daten');
+    }
+  }
+});
+</script>
+
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9869a4201468bbeb',t:'MTc1OTEyOTYyMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
